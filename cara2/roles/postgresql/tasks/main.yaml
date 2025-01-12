@@ -1,0 +1,63 @@
+---
+- name: Update apt repository
+  apt:
+    update_cache: yes
+
+- name: Install psycopg2 dependencies
+  apt:
+    name:
+      - python3-psycopg2
+      - libpq-dev
+    state: present
+    update_cache: yes
+
+- name: Install PostgreSQL
+  apt:
+    name: postgresql
+    state: present
+
+- name: Ensure PostgreSQL service is running
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Configure PostgreSQL to allow remote connections
+  lineinfile:
+    path: /etc/postgresql/12/main/postgresql.conf
+    regexp: "^#listen_addresses ="
+    line: "{{ line_postgresql }}"
+    state: present
+
+- name: Allow remote access in pg_hba.conf
+  lineinfile:
+    path: /etc/postgresql/12/main/pg_hba.conf
+    line: "{{ line_pghba}}"
+    state: present
+
+- name: Restart PostgreSQL
+  service:
+    name: postgresql
+    state: restarted
+
+- name: Create PostgreSQL user
+  become_user: postgres
+  postgresql_user:
+    name: "{{db_user }}"
+    password: "{{ db_pwd }}"
+    state: present
+
+- name: Create PostgreSQL database
+  become_user: postgres
+  postgresql_db:
+    name: "{{ db_name }}"
+    owner: "{{db_user}}"
+    state: present
+
+- name: Grant privileges to user on database
+  become_user: postgres
+  postgresql_privs:
+    db: "{{ db_name }}"
+    roles: "{{db_user}}"
+    type: database
+    privs: ALL

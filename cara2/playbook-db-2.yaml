@@ -1,0 +1,5 @@
+- name: Install Database postgresql
+  become: true
+  hosts: database
+  roles:
+    - postgresql

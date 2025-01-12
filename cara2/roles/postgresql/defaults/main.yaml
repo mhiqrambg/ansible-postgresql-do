@@ -1,0 +1,2 @@
+line_pghba: host    all             all             0.0.0.0/0               md5
+line_postgresql: listen_addresses = '*'

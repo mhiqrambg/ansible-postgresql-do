@@ -1,0 +1,66 @@
+---
+- name: Install and configure PostgreSQL
+  hosts: postgresql
+  become: yes
+  tasks:
+    - name: Update apt repository
+      apt:
+        update_cache: yes
+    - name: Install psycopg2 dependencies
+      apt:
+        name:
+          - python3-psycopg2
+          - libpq-dev
+        state: present
+        update_cache: yes
+
+    - name: Install PostgreSQL
+      apt:
+        name: postgresql
+        state: present
+
+    - name: Ensure PostgreSQL service is running
+      service:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Configure PostgreSQL to allow remote connections
+      lineinfile:
+        path: /etc/postgresql/12/main/postgresql.conf
+        regexp: "^#listen_addresses ="
+        line: "listen_addresses = '*'"
+        state: present
+
+    - name: Allow remote access in pg_hba.conf
+      lineinfile:
+        path: /etc/postgresql/12/main/pg_hba.conf
+        line: "host    all             all             0.0.0.0/0               md5"
+        state: present
+
+    - name: Restart PostgreSQL to apply changes
+      service:
+        name: postgresql
+        state: restarted
+
+    - name: Create PostgreSQL user
+      become_user: postgres
+      postgresql_user:
+        name: nama_pengguna
+        password: password_anda
+        state: present
+
+    - name: Create PostgreSQL database
+      become_user: postgres
+      postgresql_db:
+        name: nama_database
+        owner: nama_pengguna
+        state: present
+
+    - name: Grant privileges to user on database
+      become_user: postgres
+      postgresql_privs:
+        db: nama_database
+        roles: nama_pengguna
+        type: database
+        privs: ALL
